@@ -16,11 +16,11 @@ function formatTime(event) {
   return ''
 }
 
-function DaySection({ label, date, events, loading, calendarColors }) {
+function DaySection({ label, date, events, loading, calendarColors, className = '' }) {
   const isToday = date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className={`w-1/2 flex flex-col min-h-0 min-w-0 ${className}`}>
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
           {label}
@@ -115,21 +115,22 @@ export default function WeekendCard({ weekend, events, loading, calendarColors }
       <div className="w-full h-px bg-gray-100 mb-3" />
 
       {/* Day sections */}
-      <div className="flex gap-3 flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0">
         <DaySection
           label="Sat"
           date={saturday}
           events={events?.saturday}
           loading={loading}
           calendarColors={calendarColors}
+          className="pr-2 border-r border-gray-100"
         />
-        <div className="w-px bg-gray-100" />
         <DaySection
           label="Sun"
           date={sunday}
           events={events?.sunday}
           loading={loading}
           calendarColors={calendarColors}
+          className="pl-2"
         />
       </div>
     </div>
