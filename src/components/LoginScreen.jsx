@@ -1,21 +1,21 @@
 export default function LoginScreen({ onSignIn }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
         <div className="flex items-center gap-3">
-          <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <h1 className="text-2xl font-medium text-gray-800">cal views</h1>
+          <h1 className="text-2xl font-medium text-gray-800 dark:text-gray-100">cal views</h1>
         </div>
 
-        <p className="text-gray-500 text-center text-sm leading-relaxed">
+        <p className="text-gray-500 dark:text-gray-400 text-center text-sm leading-relaxed">
           Browse your upcoming weekends at a glance. Connect your Google Calendar to get started.
         </p>
 
         <button
           onClick={onSignIn}
-          className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:border-gray-400 transition-all text-sm font-medium text-gray-700 w-full justify-center"
+          className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:shadow-md hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm font-medium text-gray-700 dark:text-gray-200 w-full justify-center"
         >
           <GoogleLogo />
           Sign in with Google

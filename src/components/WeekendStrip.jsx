@@ -3,9 +3,13 @@ import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import WeekendCard from './WeekendCard'
+import WeekendCardGrid from './WeekendCardGrid'
 import CalendarLegend from './CalendarLegend'
+import ViewModeToggle from './ViewModeToggle'
 
 dayjs.extend(isoWeek)
+
+const VIEW_KEY = 'cal_views_view_mode'
 
 // Generate the next N weekends starting from today
 function getUpcomingWeekends(count = 12) {
@@ -52,6 +56,12 @@ export default function WeekendStrip({ accessToken }) {
   const weekends = useMemo(() => getUpcomingWeekends(12), [])
   const { eventsByWeekend, calendars, loading, error } = useCalendarEvents(accessToken, weekends)
   const [hiddenCalendarIds, setHiddenCalendarIds] = useState(new Set())
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem(VIEW_KEY) || 'schedule')
+
+  const handleViewChange = (mode) => {
+    setViewMode(mode)
+    localStorage.setItem(VIEW_KEY, mode)
+  }
 
   // Build a map of calendarId → background color from Google's API
   const calendarColors = useMemo(() => {
@@ -77,31 +87,37 @@ export default function WeekendStrip({ accessToken }) {
   const scroll = (direction) => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollBy({ left: direction * 400, behavior: 'smooth' })
+    const scrollAmount = viewMode === 'calendar' ? 420 : 340
+    el.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' })
   }
+
+  const CardComponent = viewMode === 'calendar' ? WeekendCardGrid : WeekendCard
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       {/* Title bar */}
       <div className="flex items-center justify-between px-6 py-4">
-        <h2 className="text-base font-medium text-gray-600">Upcoming weekends</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-base font-medium text-gray-600 dark:text-gray-300">Upcoming weekends</h2>
+          <ViewModeToggle viewMode={viewMode} onChange={handleViewChange} />
+        </div>
         <div className="flex items-center gap-2">
           {loading && (
-            <span className="text-sm text-gray-400">Loading events…</span>
+            <span className="text-sm text-gray-400 dark:text-gray-500">Loading events…</span>
           )}
           {error && (
             <span className="text-sm text-red-400">Could not load events</span>
           )}
           <button
             onClick={() => scroll(-1)}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
             aria-label="Scroll left"
           >
             <ChevronLeft />
           </button>
           <button
             onClick={() => scroll(1)}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
             aria-label="Scroll right"
           >
             <ChevronRight />
@@ -126,7 +142,7 @@ export default function WeekendStrip({ accessToken }) {
         style={{ scrollbarWidth: 'none' }}
       >
         {weekends.map((weekend) => (
-          <WeekendCard
+          <CardComponent
             key={weekend.key}
             weekend={weekend}
             events={filterEvents(eventsByWeekend[weekend.key], hiddenCalendarIds)}
