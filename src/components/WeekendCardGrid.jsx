@@ -13,19 +13,73 @@ function hexToTint(hex, opacity = 0.2) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-function getEventPosition(event) {
-  if (event.start?.date) return null // all-day events handled separately
-
+function getEventTimes(event) {
   const start = dayjs(event.start.dateTime)
   const end = dayjs(event.end.dateTime)
-  const startMinutes = start.hour() * 60 + start.minute()
-  const endMinutes = end.hour() * 60 + end.minute()
-  const durationMinutes = Math.max(endMinutes - startMinutes, 30) // minimum 30min visual height
+  return {
+    startMinutes: start.hour() * 60 + start.minute(),
+    endMinutes: end.hour() * 60 + end.minute(),
+  }
+}
 
-  const top = ((startMinutes - START_HOUR * 60) / 60) * HOUR_HEIGHT
-  const height = (durationMinutes / 60) * HOUR_HEIGHT
+// Lay out overlapping events side by side (Google Calendar algorithm)
+// Returns events with added `column` and `totalColumns` properties
+function layoutOverlappingEvents(events) {
+  if (events.length === 0) return []
 
-  return { top: Math.max(0, top), height: Math.min(height, TOTAL_HOURS * HOUR_HEIGHT - top) }
+  // Sort by start time, then by duration (longer first)
+  const sorted = [...events]
+    .map((e) => ({ ...e, ...getEventTimes(e) }))
+    .sort((a, b) => a.startMinutes - b.startMinutes || (b.endMinutes - b.startMinutes) - (a.endMinutes - a.startMinutes))
+
+  // Group into clusters of overlapping events
+  const clusters = []
+  let currentCluster = [sorted[0]]
+  let clusterEnd = sorted[0].endMinutes
+
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].startMinutes < clusterEnd) {
+      // Overlaps with current cluster
+      currentCluster.push(sorted[i])
+      clusterEnd = Math.max(clusterEnd, sorted[i].endMinutes)
+    } else {
+      clusters.push(currentCluster)
+      currentCluster = [sorted[i]]
+      clusterEnd = sorted[i].endMinutes
+    }
+  }
+  clusters.push(currentCluster)
+
+  // Assign columns within each cluster
+  const result = []
+  for (const cluster of clusters) {
+    const columns = [] // each column tracks its end time
+    for (const event of cluster) {
+      // Find the first column where this event fits (doesn't overlap)
+      let placed = false
+      for (let col = 0; col < columns.length; col++) {
+        if (event.startMinutes >= columns[col]) {
+          columns[col] = event.endMinutes
+          result.push({ ...event, column: col, totalColumns: 0 })
+          placed = true
+          break
+        }
+      }
+      if (!placed) {
+        result.push({ ...event, column: columns.length, totalColumns: 0 })
+        columns.push(event.endMinutes)
+      }
+    }
+    // Set totalColumns for all events in this cluster
+    const total = columns.length
+    for (const r of result) {
+      if (cluster.some((c) => c.id === r.id)) {
+        r.totalColumns = total
+      }
+    }
+  }
+
+  return result
 }
 
 function formatTimeRange(event) {
@@ -39,7 +93,7 @@ function AllDaySection({ events, calendarColors }) {
   if (!events || events.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-1 mb-1">
+    <div className="flex flex-col gap-1 px-0.5 mb-1">
       {events.map((event) => {
         const color = calendarColors?.[event.calendarId] || '#4285f4'
         return (
@@ -61,72 +115,63 @@ function AllDaySection({ events, calendarColors }) {
   )
 }
 
-function DayGrid({ date, events, calendarColors, label }) {
-  const isToday = date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
-  const allDayEvents = events?.filter((e) => e.start?.date) ?? []
+function DayColumn({ events, calendarColors }) {
   const timedEvents = events?.filter((e) => e.start?.dateTime) ?? []
+  const laid = layoutOverlappingEvents(timedEvents)
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col">
-      {/* Day header */}
-      <div className="flex items-center gap-2 px-1 pb-2">
-        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-          {label}
-        </span>
-        <span
-          className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-            isToday ? 'bg-blue-600 text-white' : 'text-gray-400 dark:text-gray-500'
-          }`}
-        >
-          {date.format('D')}
-        </span>
-      </div>
+    <div className="relative flex-1 min-w-0" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
+      {/* Hour lines */}
+      {HOURS.map((hour) => (
+        <div
+          key={hour}
+          className="absolute w-full border-t border-gray-100 dark:border-gray-700/50"
+          style={{ top: (hour - START_HOUR) * HOUR_HEIGHT }}
+        />
+      ))}
 
-      {/* All-day events */}
-      <AllDaySection events={allDayEvents} calendarColors={calendarColors} />
+      {/* Timed events */}
+      {laid.map((event) => {
+        const startMinutes = event.startMinutes
+        const endMinutes = event.endMinutes
+        const durationMinutes = Math.max(endMinutes - startMinutes, 20)
 
-      {/* Time grid */}
-      <div className="relative" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
-        {/* Hour lines */}
-        {HOURS.map((hour) => (
+        const top = ((startMinutes - START_HOUR * 60) / 60) * HOUR_HEIGHT
+        const height = (durationMinutes / 60) * HOUR_HEIGHT
+        const clampedTop = Math.max(0, top)
+        const clampedHeight = Math.min(height, TOTAL_HOURS * HOUR_HEIGHT - clampedTop)
+
+        const widthPercent = 100 / event.totalColumns
+        const leftPercent = event.column * widthPercent
+
+        const color = calendarColors?.[event.calendarId] || '#4285f4'
+        return (
           <div
-            key={hour}
-            className="absolute w-full border-t border-gray-100 dark:border-gray-700/50"
-            style={{ top: (hour - START_HOUR) * HOUR_HEIGHT }}
-          />
-        ))}
-
-        {/* Timed events */}
-        {timedEvents.map((event) => {
-          const pos = getEventPosition(event)
-          if (!pos) return null
-          const color = calendarColors?.[event.calendarId] || '#4285f4'
-          return (
-            <div
-              key={event.id}
-              className="absolute left-0 right-1 rounded px-1.5 py-0.5 overflow-hidden cursor-default"
-              title={`${event.summary || '(no title)'}\n${formatTimeRange(event)}`}
-              style={{
-                top: pos.top,
-                height: pos.height,
-                backgroundColor: hexToTint(color, 0.25),
-                color: color,
-                borderLeft: `3px solid ${color}`,
-                zIndex: 1,
-              }}
-            >
-              <div className="text-xs font-medium truncate leading-tight">
-                {event.summary || '(no title)'}
-              </div>
-              {pos.height >= 36 && (
-                <div className="text-xs leading-tight" style={{ opacity: 0.7 }}>
-                  {formatTimeRange(event)}
-                </div>
-              )}
+            key={event.id}
+            className="absolute rounded px-1 py-0.5 overflow-hidden cursor-default"
+            title={`${event.summary || '(no title)'}\n${formatTimeRange(event)}`}
+            style={{
+              top: clampedTop,
+              height: clampedHeight,
+              left: `${leftPercent}%`,
+              width: `calc(${widthPercent}% - 2px)`,
+              backgroundColor: hexToTint(color, 0.25),
+              color: color,
+              borderLeft: `3px solid ${color}`,
+              zIndex: 1,
+            }}
+          >
+            <div className="text-xs font-medium truncate leading-tight">
+              {event.summary || '(no title)'}
             </div>
-          )
-        })}
-      </div>
+            {clampedHeight >= 36 && (
+              <div className="text-xs leading-tight" style={{ opacity: 0.7 }}>
+                {formatTimeRange(event)}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -142,6 +187,9 @@ export default function WeekendCardGrid({ weekend, events, loading, calendarColo
     (events?.saturday?.length ?? 0) + (events?.sunday?.length ?? 0)
   const isBusy = totalEvents >= 3
   const isFree = !loading && totalEvents === 0
+
+  const satAllDay = events?.saturday?.filter((e) => e.start?.date) ?? []
+  const sunAllDay = events?.sunday?.filter((e) => e.start?.date) ?? []
 
   return (
     <div
@@ -177,6 +225,32 @@ export default function WeekendCardGrid({ weekend, events, loading, calendarColo
 
       <div className="w-full h-px bg-gray-100 dark:bg-gray-700 mb-3" />
 
+      {/* Day headers */}
+      <div className="flex mb-2">
+        <div className="w-10 flex-shrink-0" />
+        <div className="flex flex-1 min-w-0">
+          <DayHeader date={saturday} label="Sat" />
+          <div className="w-px mx-1 flex-shrink-0" />
+          <DayHeader date={sunday} label="Sun" />
+        </div>
+      </div>
+
+      {/* All-day events row */}
+      {(satAllDay.length > 0 || sunAllDay.length > 0) && (
+        <div className="flex mb-2">
+          <div className="w-10 flex-shrink-0" />
+          <div className="flex flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <AllDaySection events={satAllDay} calendarColors={calendarColors} />
+            </div>
+            <div className="w-px mx-1 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <AllDaySection events={sunAllDay} calendarColors={calendarColors} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Time grid content */}
       <div className="flex flex-1 min-h-0 overflow-y-auto">
         {/* Hour labels */}
@@ -192,24 +266,29 @@ export default function WeekendCardGrid({ weekend, events, loading, calendarColo
           ))}
         </div>
 
-        {/* Saturday column */}
-        <DayGrid
-          date={saturday}
-          events={events?.saturday}
-          calendarColors={calendarColors}
-          label="Sat"
-        />
-
-        <div className="w-px bg-gray-100 dark:bg-gray-700 mx-1 flex-shrink-0" />
-
-        {/* Sunday column */}
-        <DayGrid
-          date={sunday}
-          events={events?.sunday}
-          calendarColors={calendarColors}
-          label="Sun"
-        />
+        {/* Day columns aligned with hour labels */}
+        <DayColumn events={events?.saturday} calendarColors={calendarColors} />
+        <div className="w-px bg-gray-100 dark:bg-gray-700 mx-1 flex-shrink-0" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }} />
+        <DayColumn events={events?.sunday} calendarColors={calendarColors} />
       </div>
+    </div>
+  )
+}
+
+function DayHeader({ date, label }) {
+  const isToday = date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+  return (
+    <div className="flex-1 flex items-center gap-2 px-1">
+      <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+        {label}
+      </span>
+      <span
+        className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+          isToday ? 'bg-blue-600 text-white' : 'text-gray-400 dark:text-gray-500'
+        }`}
+      >
+        {date.format('D')}
+      </span>
     </div>
   )
 }
