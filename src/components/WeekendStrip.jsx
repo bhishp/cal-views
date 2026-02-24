@@ -40,7 +40,16 @@ function getUpcomingWeekends(count = 12) {
 export default function WeekendStrip({ accessToken }) {
   const scrollRef = useRef(null)
   const weekends = useMemo(() => getUpcomingWeekends(12), [])
-  const { eventsByWeekend, loading, error } = useCalendarEvents(accessToken, weekends)
+  const { eventsByWeekend, calendars, loading, error } = useCalendarEvents(accessToken, weekends)
+
+  // Build a map of calendarId → background color from Google's API
+  const calendarColors = useMemo(() => {
+    const map = {}
+    calendars.forEach((cal) => {
+      map[cal.id] = cal.backgroundColor || '#4285f4'
+    })
+    return map
+  }, [calendars])
 
   const scroll = (direction) => {
     const el = scrollRef.current
@@ -89,7 +98,7 @@ export default function WeekendStrip({ accessToken }) {
             weekend={weekend}
             events={eventsByWeekend[weekend.key]}
             loading={loading}
-            accessToken={accessToken}
+            calendarColors={calendarColors}
           />
         ))}
       </div>

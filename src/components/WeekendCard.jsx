@@ -1,15 +1,11 @@
 import dayjs from 'dayjs'
 
-const EVENT_COLORS = [
-  'bg-blue-100 text-blue-800',
-  'bg-green-100 text-green-800',
-  'bg-purple-100 text-purple-800',
-  'bg-orange-100 text-orange-800',
-  'bg-pink-100 text-pink-800',
-]
-
-function eventColor(index) {
-  return EVENT_COLORS[index % EVENT_COLORS.length]
+// Convert a hex color to a lighter background tint
+function hexToTint(hex, opacity = 0.15) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
 function formatTime(event) {
@@ -20,7 +16,7 @@ function formatTime(event) {
   return ''
 }
 
-function DaySection({ label, date, events, loading }) {
+function DaySection({ label, date, events, loading, calendarColors }) {
   const isToday = date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
 
   return (
@@ -45,15 +41,23 @@ function DaySection({ label, date, events, loading }) {
             <div className="h-5 bg-gray-100 rounded animate-pulse w-3/4" />
           </>
         ) : events && events.length > 0 ? (
-          events.map((event, i) => (
-            <div
-              key={event.id}
-              className={`text-xs rounded px-2 py-1 ${eventColor(i)} leading-snug`}
-            >
-              <div className="font-medium truncate">{event.summary || '(no title)'}</div>
-              <div className="opacity-70">{formatTime(event)}</div>
-            </div>
-          ))
+          events.map((event) => {
+            const color = calendarColors?.[event.calendarId] || '#4285f4'
+            return (
+              <div
+                key={event.id}
+                className="text-xs rounded px-2 py-1 leading-snug"
+                style={{
+                  backgroundColor: hexToTint(color),
+                  color: color,
+                  borderLeft: `3px solid ${color}`,
+                }}
+              >
+                <div className="font-medium truncate">{event.summary || '(no title)'}</div>
+                <div style={{ opacity: 0.7 }}>{formatTime(event)}</div>
+              </div>
+            )
+          })
         ) : (
           !loading && (
             <span className="text-xs text-gray-300 italic">Free</span>
@@ -64,9 +68,8 @@ function DaySection({ label, date, events, loading }) {
   )
 }
 
-export default function WeekendCard({ weekend, events, loading }) {
+export default function WeekendCard({ weekend, events, loading, calendarColors }) {
   const { saturday, sunday } = weekend
-  const monthLabel = saturday.format('MMM')
   const isSameMonth = saturday.format('MM') === sunday.format('MM')
   const monthDisplay = isSameMonth
     ? saturday.format('MMMM YYYY')
@@ -118,6 +121,7 @@ export default function WeekendCard({ weekend, events, loading }) {
           date={saturday}
           events={events?.saturday}
           loading={loading}
+          calendarColors={calendarColors}
         />
         <div className="w-px bg-gray-100" />
         <DaySection
@@ -125,6 +129,7 @@ export default function WeekendCard({ weekend, events, loading }) {
           date={sunday}
           events={events?.sunday}
           loading={loading}
+          calendarColors={calendarColors}
         />
       </div>
     </div>
