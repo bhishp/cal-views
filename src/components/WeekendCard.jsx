@@ -16,18 +16,24 @@ function formatTime(event) {
   return ''
 }
 
+function buildTooltip(event) {
+  const title = event.summary || '(no title)'
+  const time = formatTime(event)
+  return time ? `${title}\n${time}` : title
+}
+
 function DaySection({ label, date, events, loading, calendarColors, className = '' }) {
   const isToday = date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
 
   return (
     <div className={`w-1/2 flex flex-col min-h-0 min-w-0 ${className}`}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
           {label}
         </span>
         <span
           className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-            isToday ? 'bg-blue-600 text-white' : 'text-gray-400'
+            isToday ? 'bg-blue-600 text-white' : 'text-gray-400 dark:text-gray-500'
           }`}
         >
           {date.format('D')}
@@ -37,8 +43,8 @@ function DaySection({ label, date, events, loading, calendarColors, className = 
       <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto">
         {loading ? (
           <>
-            <div className="h-5 bg-gray-100 rounded animate-pulse" />
-            <div className="h-5 bg-gray-100 rounded animate-pulse w-3/4" />
+            <div className="h-5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-3/4" />
           </>
         ) : events && events.length > 0 ? (
           events.map((event) => {
@@ -46,7 +52,8 @@ function DaySection({ label, date, events, loading, calendarColors, className = 
             return (
               <div
                 key={event.id}
-                className="text-xs rounded px-2 py-1 leading-snug"
+                className="text-xs rounded px-2 py-1 leading-snug cursor-default"
+                title={buildTooltip(event)}
                 style={{
                   backgroundColor: hexToTint(color),
                   color: color,
@@ -60,7 +67,7 @@ function DaySection({ label, date, events, loading, calendarColors, className = 
           })
         ) : (
           !loading && (
-            <span className="text-xs text-gray-300 italic">Free</span>
+            <span className="text-xs text-gray-300 dark:text-gray-600 italic">Free</span>
           )
         )}
       </div>
@@ -82,37 +89,37 @@ export default function WeekendCard({ weekend, events, loading, calendarColors }
 
   return (
     <div
-      className={`flex-none w-80 rounded-xl border flex flex-col p-4 transition-shadow hover:shadow-md bg-white overflow-hidden ${
+      className={`flex-none w-80 rounded-xl border flex flex-col p-4 transition-shadow hover:shadow-md overflow-hidden ${
         isFree
-          ? 'border-green-200'
+          ? 'border-green-200 dark:border-green-900 bg-white dark:bg-gray-800'
           : isBusy
-          ? 'border-orange-200'
-          : 'border-gray-200'
+          ? 'border-orange-200 dark:border-orange-900 bg-white dark:bg-gray-800'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
       }`}
     >
       {/* Card header */}
       <div className="mb-3">
-        <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-0.5">
+        <div className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mb-0.5">
           {monthDisplay}
         </div>
         <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold text-gray-700">
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
             {saturday.format('D')} – {sunday.format('D')}
           </div>
           {isFree && (
-            <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
               Free
             </span>
           )}
           {isBusy && (
-            <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">
               Busy
             </span>
           )}
         </div>
       </div>
 
-      <div className="w-full h-px bg-gray-100 mb-3" />
+      <div className="w-full h-px bg-gray-100 dark:bg-gray-700 mb-3" />
 
       {/* Day sections */}
       <div className="flex flex-1 min-h-0">
@@ -122,7 +129,7 @@ export default function WeekendCard({ weekend, events, loading, calendarColors }
           events={events?.saturday}
           loading={loading}
           calendarColors={calendarColors}
-          className="pr-2 border-r border-gray-100"
+          className="pr-2 border-r border-gray-100 dark:border-gray-700"
         />
         <DaySection
           label="Sun"

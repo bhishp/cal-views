@@ -11,14 +11,14 @@ export default function CalendarLegend({ calendars, calendarColors, hiddenCalend
             onClick={() => onToggle(cal.id)}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-all ${
               isHidden
-                ? 'border-gray-200 text-gray-400 bg-white'
-                : 'border-gray-200 text-gray-700 bg-white hover:shadow-sm'
+                ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800'
+                : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:shadow-sm'
             }`}
           >
             <span
               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{
-                backgroundColor: isHidden ? '#d1d5db' : color,
+                backgroundColor: isHidden ? '#6b7280' : color,
               }}
             />
             <span className={isHidden ? 'line-through' : ''}>
