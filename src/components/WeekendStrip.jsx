@@ -1,8 +1,9 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 import WeekendCard from './WeekendCard'
+import CalendarLegend from './CalendarLegend'
 
 dayjs.extend(isoWeek)
 
@@ -37,10 +38,20 @@ function getUpcomingWeekends(count = 12) {
   return weekends
 }
 
+function filterEvents(events, hiddenCalendarIds) {
+  if (!events || hiddenCalendarIds.size === 0) return events
+  if (!events) return events
+  return {
+    saturday: events.saturday.filter((e) => !hiddenCalendarIds.has(e.calendarId)),
+    sunday: events.sunday.filter((e) => !hiddenCalendarIds.has(e.calendarId)),
+  }
+}
+
 export default function WeekendStrip({ accessToken }) {
   const scrollRef = useRef(null)
   const weekends = useMemo(() => getUpcomingWeekends(12), [])
   const { eventsByWeekend, calendars, loading, error } = useCalendarEvents(accessToken, weekends)
+  const [hiddenCalendarIds, setHiddenCalendarIds] = useState(new Set())
 
   // Build a map of calendarId → background color from Google's API
   const calendarColors = useMemo(() => {
@@ -51,10 +62,22 @@ export default function WeekendStrip({ accessToken }) {
     return map
   }, [calendars])
 
+  const toggleCalendar = (calendarId) => {
+    setHiddenCalendarIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(calendarId)) {
+        next.delete(calendarId)
+      } else {
+        next.add(calendarId)
+      }
+      return next
+    })
+  }
+
   const scroll = (direction) => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollBy({ left: direction * 320, behavior: 'smooth' })
+    el.scrollBy({ left: direction * 400, behavior: 'smooth' })
   }
 
   return (
@@ -86,17 +109,27 @@ export default function WeekendStrip({ accessToken }) {
         </div>
       </div>
 
+      {/* Calendar legend */}
+      {calendars.length > 0 && (
+        <CalendarLegend
+          calendars={calendars}
+          calendarColors={calendarColors}
+          hiddenCalendarIds={hiddenCalendarIds}
+          onToggle={toggleCalendar}
+        />
+      )}
+
       {/* Scrollable weekend strip */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto px-6 pb-6 flex-1 scroll-smooth"
+        className="flex gap-4 overflow-x-auto px-6 pb-6 flex-1 scroll-smooth"
         style={{ scrollbarWidth: 'none' }}
       >
         {weekends.map((weekend) => (
           <WeekendCard
             key={weekend.key}
             weekend={weekend}
-            events={eventsByWeekend[weekend.key]}
+            events={filterEvents(eventsByWeekend[weekend.key], hiddenCalendarIds)}
             loading={loading}
             calendarColors={calendarColors}
           />

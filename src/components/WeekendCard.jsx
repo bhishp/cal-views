@@ -82,7 +82,7 @@ export default function WeekendCard({ weekend, events, loading, calendarColors }
 
   return (
     <div
-      className={`flex-none w-64 rounded-xl border flex flex-col p-4 transition-shadow hover:shadow-md bg-white ${
+      className={`flex-none w-80 rounded-xl border flex flex-col p-4 transition-shadow hover:shadow-md bg-white overflow-hidden ${
         isFree
           ? 'border-green-200'
           : isBusy
