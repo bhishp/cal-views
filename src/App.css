@@ -1,0 +1,5 @@
+/* App-level styles — Tailwind handles the rest */
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
