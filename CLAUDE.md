@@ -62,6 +62,14 @@ src/
 - **Persistence**: `sessionStorage` for auth tokens, `localStorage` for user preferences (theme, view mode)
 - **No test framework** is currently set up
 
+## Workflow
+
+- **Branching**: `feat/feature-name` or `fix/bug-name` branches off `main`
+- **PRs**: one PR per feature/fix, squash-merged to `main`, branch deleted after merge
+- **Commits**: conventional commit prefixes (`feat:`, `fix:`, `docs:`, `chore:`)
+- **Google OAuth setup**: requires a Google Cloud project with Calendar API enabled and an OAuth client ID configured for `http://localhost:5173` — see Environment Setup above
+- **Google OAuth testing mode**: the app is registered as "External" in testing mode — test users must be explicitly added in Google Cloud Console > OAuth consent screen > Test users
+
 ## Key Gotchas
 
 - The Google client ID must be set in `.env` as `VITE_GOOGLE_CLIENT_ID` — Vite will not expose env vars without the `VITE_` prefix
