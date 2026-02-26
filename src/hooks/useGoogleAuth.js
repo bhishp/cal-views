@@ -34,18 +34,41 @@ export function useGoogleAuth() {
   const [isSignedIn, setIsSignedIn] = useState(!!cached)
   const [accessToken, setAccessToken] = useState(cached)
 
-  // Load the GIS script once
+  const handleTokenResponse = useCallback((response) => {
+    if (response.error) {
+      console.error('Auth error:', response.error)
+      return
+    }
+    saveToken(response.access_token, response.expires_in)
+    setAccessToken(response.access_token)
+    setIsSignedIn(true)
+  }, [])
+
+  // Load the GIS script and attempt silent token refresh
   useEffect(() => {
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
     script.defer = true
+    script.onload = () => {
+      // If we already have a valid cached token, skip silent refresh
+      if (loadToken()) return
+
+      // Try to silently get a token (works if user previously granted consent)
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: '',
+        callback: handleTokenResponse,
+      })
+      client.requestAccessToken({ prompt: '' })
+    }
     document.head.appendChild(script)
 
     return () => {
       document.head.removeChild(script)
     }
-  }, [])
+  }, [handleTokenResponse])
 
   const signIn = useCallback(() => {
     if (!window.google) {
@@ -56,19 +79,11 @@ export function useGoogleAuth() {
     tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: (response) => {
-        if (response.error) {
-          console.error('Auth error:', response.error)
-          return
-        }
-        saveToken(response.access_token, response.expires_in)
-        setAccessToken(response.access_token)
-        setIsSignedIn(true)
-      },
+      callback: handleTokenResponse,
     })
 
     tokenClient.requestAccessToken()
-  }, [])
+  }, [handleTokenResponse])
 
   const signOut = useCallback(() => {
     if (accessToken) {
