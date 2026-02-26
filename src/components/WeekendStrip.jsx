@@ -139,7 +139,7 @@ export default function WeekendStrip({ accessToken }) {
       <div
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto px-6 pb-6 flex-1 scroll-smooth"
-        style={{ scrollbarWidth: 'none' }}
+        style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
       >
         {weekends.map((weekend) => (
           <CardComponent
