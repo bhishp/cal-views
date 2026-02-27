@@ -27,7 +27,7 @@ function App() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="h-dvh flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
           <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -40,7 +40,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans transition-colors">
+    <div className="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 font-sans transition-colors">
       {isSignedIn ? (
         <>
           <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
