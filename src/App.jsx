@@ -1,12 +1,29 @@
+import { useState, useEffect } from 'react'
 import { useGoogleAuth } from './hooks/useGoogleAuth'
 import { useTheme } from './hooks/useTheme'
 import WeekendStrip from './components/WeekendStrip'
 import LoginScreen from './components/LoginScreen'
 import ThemeToggle from './components/ThemeToggle'
 
+function useOnlineStatus() {
+  const [online, setOnline] = useState(navigator.onLine)
+  useEffect(() => {
+    const goOnline = () => setOnline(true)
+    const goOffline = () => setOnline(false)
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
+  return online
+}
+
 function App() {
   const { isSignedIn, isInitializing, signIn, signOut, accessToken } = useGoogleAuth()
   const { preference, setTheme } = useTheme()
+  const online = useOnlineStatus()
 
   if (isInitializing) {
     return (
@@ -32,6 +49,11 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-lg font-medium text-gray-800 dark:text-gray-100">cal views</span>
+              {!online && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                  offline
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle preference={preference} setTheme={setTheme} />
